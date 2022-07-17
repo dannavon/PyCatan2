@@ -18,24 +18,14 @@ class Catan(object):
         player_order = list(range(len(self.game.players)))
         self.player_order = [0] + player_order + list(reversed(player_order))   # [0] designated for the last pop
 
-        # player_order = list(range(len(self.game.players)))
-        # for i in player_order + list(reversed(player_order)):
-        #     current_player = self.game.players[i]
-        #     print("Player %d, it is your turn!" % (i + 1))
-        #     coords = self.choose_intersection(self.game.board.get_valid_settlement_coords(current_player, ensure_connected=False),
-        #                                  "Where do you want to build your settlement? ")
-        #     self.game.build_settlement(player=current_player, coords=coords, cost_resources=False, ensure_connected=False)
-        #     current_player.add_resources(self.game.board.get_hex_resources_for_intersection(coords))
-        #     # Print the road options
-        #     road_options = self.game.board.get_valid_road_coords(current_player, connected_intersection=coords)
-        #     road_coords = self.choose_path(road_options, "Where do you want to build your road to? ")
-        #     self.game.build_road(player=current_player, path_coords=road_coords, cost_resources=False)
-
         self.cur_id_player = self.player_order.pop()
         self.current_player = self.game.players[self.cur_id_player]
 
         # Roll the dice
         self.dice = self.roll_dice()
+
+    def restart(self):
+        return self.__class__()
 
     def choose_intersection(self, intersection_coords, prompt):
         # Label all the letters on the board

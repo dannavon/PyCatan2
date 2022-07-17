@@ -21,7 +21,6 @@ class MCTS:
 
     def __init__(self, game, dnn):
         self.game = game
-        self.first_state=game.get_state()
         self.dnn = dnn
         self.root = MCTSNode(STATE_NODE, None, 0)
         actions = self.game.get_actions()
@@ -51,7 +50,7 @@ class MCTS:
         make one iteration of the MCTS
         :return: void
         """
-        self.game.set_state(self.first_state)
+        self.game = self.game.restart()
         reward, action_leaf, new_state = self.selection(self.root, self.game)
         if sum(reward) == 0:
             action_leaf = self.expansion(action_leaf, new_state, self.game)
