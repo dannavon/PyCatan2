@@ -1,6 +1,6 @@
 from mcts import MCTS
 from mlp import MLP
-from game import Game
+from catan_wrp import Catan
 
 
 if __name__ == '__main__':
@@ -10,5 +10,5 @@ if __name__ == '__main__':
         nonlins=['relu', 'tanh', 'relu', 'none']
     )
 
-    mcts = MCTS(Game(), mlp)
+    mcts = MCTS(Catan(), mlp)
     print(mcts.get_best_action(50))

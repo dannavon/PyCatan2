@@ -1,3 +1,4 @@
+import numpy as np
 
 from pycatan import Game, DevelopmentCard, Resource
 from pycatan.board import BeginnerBoard, BoardRenderer, BuildingType
@@ -9,26 +10,28 @@ from copy import deepcopy
 class Catan(object):
     def __init__(self):
 
+        self.picked_settl_coo = None
         self.game = Game(BeginnerBoard())
         self.renderer = BoardRenderer(self.game.board)
         self.label_letters = string.ascii_lowercase + string.ascii_uppercase + "123456789"
 
-        self.picking_stage = True
-
         player_order = list(range(len(self.game.players)))
-        for i in player_order + list(reversed(player_order)):
-            current_player = self.game.players[i]
-            print("Player %d, it is your turn!" % (i + 1))
-            coords = self.choose_intersection(self.game.board.get_valid_settlement_coords(current_player, ensure_connected=False),
-                                         "Where do you want to build your settlement? ")
-            self.game.build_settlement(player=current_player, coords=coords, cost_resources=False, ensure_connected=False)
-            current_player.add_resources(self.game.board.get_hex_resources_for_intersection(coords))
-            # Print the road options
-            road_options = self.game.board.get_valid_road_coords(current_player, connected_intersection=coords)
-            road_coords = self.choose_path(road_options, "Where do you want to build your road to? ")
-            self.game.build_road(player=current_player, path_coords=road_coords, cost_resources=False)
+        self.player_order = [0] + player_order + list(reversed(player_order))   # [0] designated for the last pop
 
-        self.cur_id_player = 0
+        # player_order = list(range(len(self.game.players)))
+        # for i in player_order + list(reversed(player_order)):
+        #     current_player = self.game.players[i]
+        #     print("Player %d, it is your turn!" % (i + 1))
+        #     coords = self.choose_intersection(self.game.board.get_valid_settlement_coords(current_player, ensure_connected=False),
+        #                                  "Where do you want to build your settlement? ")
+        #     self.game.build_settlement(player=current_player, coords=coords, cost_resources=False, ensure_connected=False)
+        #     current_player.add_resources(self.game.board.get_hex_resources_for_intersection(coords))
+        #     # Print the road options
+        #     road_options = self.game.board.get_valid_road_coords(current_player, connected_intersection=coords)
+        #     road_coords = self.choose_path(road_options, "Where do you want to build your road to? ")
+        #     self.game.build_road(player=current_player, path_coords=road_coords, cost_resources=False)
+
+        self.cur_id_player = self.player_order.pop()
         self.current_player = self.game.players[self.cur_id_player]
 
         # Roll the dice
@@ -41,7 +44,8 @@ class Catan(object):
         intersection_labels = {intersection_list[i]: self.label_letters[i] for i in range(len(intersection_list))}
         self.renderer.render_board(intersection_labels=intersection_labels)
         # Prompt the user
-        letter = input(prompt)
+        #letter = input(prompt)
+        letter = random.choice(list(intersection_labels.values()))
         letter_to_intersection = {v: k for k, v in intersection_labels.items()}
         intersection = letter_to_intersection[letter]
         return intersection.coords
@@ -56,7 +60,8 @@ class Catan(object):
         path_labels = {path_list[i]: self.label_letters[i] for i in range(len(path_coords))}
         self.renderer.render_board(path_labels=path_labels)
         # Ask the user for a letter
-        letter = input(prompt)[0]
+        # letter = input(prompt)[0]
+        letter = random.choice(list(path_labels.values()))
         # Get the path from the letter entered by the user
         letter_to_path = {v: k for k, v in path_labels.items()}
         return letter_to_path[letter].path_coords
@@ -126,46 +131,73 @@ class Catan(object):
 
         self.dice = state[2]
 
-
-    def get_state(self):
+    def get_state(self): #seralize
         return (deepcopy(self.game), self.cur_id_player, self.dice)
 
     def get_actions(self):
         """return a list of all the actions"""
-        available_actions = [(4,)]
-        possible_trades = list(self.current_player.get_possible_trades())
-        for t in possible_trades:
-            available_actions.append((3, t))
+        available_actions = []
+        if len(self.player_order) > 0:
+            if self.picked_settl_coo is None:
+                valid_coords = self.game.board.get_valid_settlement_coords(self.current_player, ensure_connected=False)
+                for c in valid_coords:
+                    available_actions.append((BuildingType.SETTLEMENT, c))
+            else:
+                road_options = self.game.board.get_valid_road_coords(self.current_player, connected_intersection=self.picked_settl_coo)
+                for r in road_options:
+                    available_actions.append((BuildingType.ROAD, r))
 
-        #build city
-        if self.current_player.has_resources(BuildingType.CITY.get_required_resources()):
-            # Get the valid settlement coords
-            valid_coords = self.game.board.get_valid_city_coords(self.current_player)
-            for c in valid_coords:
-                available_actions.append((BuildingType.SETTLEMENT, c))
+        else:
 
-        #build settelement
-        if self.current_player.has_resources(BuildingType.SETTLEMENT.get_required_resources()):
-            # Get the valid settlement coords
-            valid_coords = self.game.board.get_valid_settlement_coords(self.current_player)
-            for c in valid_coords:
-                available_actions.append((BuildingType.SETTLEMENT, c))
-
-        #build road
-        if self.current_player.has_resources(BuildingType.ROAD.get_required_resources()):
-            # Get the valid settlement coords
+            available_actions.append((4,)) #end turn
+            possible_trades = list(self.current_player.get_possible_trades())
+            for t in possible_trades:
+                available_actions.append((3, t))
+            # Get the valid road coords
             valid_coords = self.game.board.get_valid_road_coords(self.current_player)
             for c in valid_coords:
                 available_actions.append((BuildingType.ROAD, c))
 
-    def make_action(self, action):
-        if action[0] == 0:
-            coords = action[1]
-            self.game.build_road(self.current_player, coords)
+            #build city
+            if self.current_player.has_resources(BuildingType.CITY.get_required_resources()):
+                # Get the valid city coords
+                valid_coords = self.game.board.get_valid_city_coords(self.current_player)
+                for c in valid_coords:
+                    available_actions.append((BuildingType.SETTLEMENT, c))
 
-        elif action[0] == 1:
+            # build settlement
+            if self.current_player.has_resources(BuildingType.SETTLEMENT.get_required_resources()):
+                # Get the valid settlement coords
+                valid_coords = self.game.board.get_valid_settlement_coords(self.current_player)
+                for c in valid_coords:
+                    available_actions.append((BuildingType.SETTLEMENT, c))
+
+            # build road
+            if self.current_player.has_resources(BuildingType.ROAD.get_required_resources()):
+                # Get the valid road coords
+                valid_coords = self.game.board.get_valid_road_coords(self.current_player)
+                for c in valid_coords:
+                    available_actions.append((BuildingType.ROAD, c))
+
+        return available_actions
+
+    def make_action(self, action):
+        initialization_stage = len(self.player_order) > 0
+        if action[0] == 0:  # road
             coords = action[1]
-            self.game.build_settlement(self.current_player, coords)
+            self.game.build_road(self.current_player, coords, cost_resources=(not initialization_stage))
+            if initialization_stage:
+                self.picked_settl_coo = None
+                self.cur_id_player = self.player_order.pop()
+                self.current_player = self.game.players[self.cur_id_player]
+
+        elif action[0] == 1:    # settlement
+            coords = action[1]
+            self.game.build_settlement(self.current_player, ensure_connected=(not initialization_stage), cost_resources=(not initialization_stage))
+            if initialization_stage:
+                self.picked_settl_coo = coords
+                if len(self.player_order) <= len(self.game.players)+1:
+                    self.current_player.add_resources(self.game.board.get_hex_resources_for_intersection(coords))
 
         elif action[0] == 2:
             coords = action[1]
@@ -178,6 +210,13 @@ class Catan(object):
         elif action[0] == 4:
             self.end_turn()
 
-        return self.game
+        reward = [0, 0, 0, 0]
+        if self.game.get_victory_points(self.current_player) >= 10:
+            print("Congratuations! Player %d wins!" % (self.cur_id_player + 1))
+            print("Final board:")
+            print(self.game.board)
+            players=self.game.players
+            reward = [self.game.get_victory_points(p) for p in players]
+        return reward
 
-catan = Catan()
+# catan = Catan()
