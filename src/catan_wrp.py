@@ -1,11 +1,12 @@
 import numpy as np
 
 from pycatan import Game, DevelopmentCard, Resource
-from pycatan.board import BeginnerBoard, BoardRenderer, BuildingType
+from pycatan.board import BeginnerBoard, BoardRenderer, BuildingType, Coords
 import string
 import random
 import sys
 from copy import deepcopy
+
 
 class Catan(object):
     def __init__(self):
@@ -16,7 +17,7 @@ class Catan(object):
         self.label_letters = string.ascii_lowercase + string.ascii_uppercase + "123456789"
 
         player_order = list(range(len(self.game.players)))
-        self.player_order = [0] + player_order + list(reversed(player_order))   # [0] designated for the last pop
+        self.player_order = [0] + player_order + list(reversed(player_order))  # [0] designated for the last pop
 
         self.cur_id_player = self.player_order.pop()
         self.current_player = self.game.players[self.cur_id_player]
@@ -27,6 +28,9 @@ class Catan(object):
     def restart(self):
         return self.__class__()
 
+    def get_turn(self):
+        return self.cur_id_player
+
     def choose_intersection(self, intersection_coords, prompt):
         # Label all the letters on the board
         intersection_list = [self.game.board.intersections[i] for i in intersection_coords]
@@ -34,7 +38,7 @@ class Catan(object):
         intersection_labels = {intersection_list[i]: self.label_letters[i] for i in range(len(intersection_list))}
         self.renderer.render_board(intersection_labels=intersection_labels)
         # Prompt the user
-        #letter = input(prompt)
+        # letter = input(prompt)
         letter = random.choice(list(intersection_labels.values()))
         letter_to_intersection = {v: k for k, v in intersection_labels.items()}
         intersection = letter_to_intersection[letter]
@@ -69,15 +73,15 @@ class Catan(object):
     def choose_resource(self, prompt):
         print(prompt)
         resources = [res for res in Resource]
-        for i in range(len(resources)):
-            print("%d: %s" % (i, resources[i]))
+        # for i in range(len(resources)):
+        #     print("%d: %s" % (i, resources[i]))
         resource_choice = int(input('->  '))
         return resources[resource_choice]
 
     def move_robber(self, player):
         # Don't let the player move the robber back onto the same hex
         hex_coords = self.choose_hex([c for c in self.game.board.hexes if c != self.game.board.robber],
-                                "Where do you want to move the robber? ")
+                                     "Where do you want to move the robber? ")
         self.game.board.robber = hex_coords
         # Choose a player to steal a card from
         potential_players = list(self.game.board.get_players_on_hex(hex_coords))
@@ -113,16 +117,107 @@ class Catan(object):
 
     def set_state(self, state):
         """change the state of the game to the given state"""
-        self.game = state[0]
-        self.renderer = BoardRenderer(self.game.board)
 
-        self.cur_id_player = state[1]
+        self.cur_id_player = state[0]
         self.current_player = self.game.players[self.cur_id_player]
 
-        self.dice = state[2]
+        self.dice = state[1]
+        self.game.largest_army_owner = state[2]
+        self.game.longest_road_owner = state[3]
 
-    def get_state(self): #seralize
-        return (deepcopy(self.game), self.cur_id_player, self.dice)
+        i = 4
+        for k, v in self.game.board.intersections.items():
+            self.game.board.intersections[k].building = state[i]
+            i += 1
+
+        for k, v in self.game.board.paths.items():
+            self.game.board.paths[k].building = state[i]
+            i += 1
+
+        for p in self.game.players:
+            for r, n in p.resources.items():
+                p.resources[r]= state[i]
+                i += 1
+
+            if len(p.connected_harbors) == state[i]:
+                i += len(p.connected_harbors)*4+1
+                continue
+            else:
+                coords = set({Coords(state[i],state[i+1]), Coords(state[i+2],state[i+3])})
+                for harbor in self.harbors.values():
+                    if coords in harbor.path_coords and harbor not in p.connected_harbors:
+                        p.connected_harbors.add(harbor)
+
+        self.renderer = BoardRenderer(self.game.board)
+
+    def get_state(self):
+        # serialize game -
+        # serialize board:
+        #       hexes: coodrs,type,token
+        #       harbors: path_coords(2coords),resource
+        #       intersections
+        #       paths
+        # serialize players:
+        #     resources: Dict[Resource, int]
+        #     development_cards?
+        #     connected_harbors = set()
+        #     number_played_knights?
+        # largest army/road(/carddeck?)
+
+        # serialize id and dice
+
+        s = np.array([], dtype=np.float)  # state representation.
+        s = np.append(s, self.cur_id_player)
+        s = np.append(s, self.dice)
+        s = np.append(s, self.game.largest_army_owner)
+        s = np.append(s, self.game.longest_road_owner)
+        # s = np.append(s, self.game.development_card_deck)
+        # serialize board:
+        #   hexes:
+        # hexes = [[h.coords.q, h.coords.r, h.hex_type, h.token_number] for h in self.game.board.hexes.values()]
+        # s = np.append(s, hexes)
+        #   harbors:
+        # harbors = []
+        # for h, r in self.game.board.harbors.items():
+        #     for v in h:
+        #         harbors.append(v.q)
+        #         harbors.append(v.r)
+        #     harbors.append(r.resource)
+        # s = np.append(s, harbors)
+
+        #   intersections:
+        # intersections = [[i.coords.q, i.coords.r, i.building] for i in self.game.board.intersections.values()]
+        intersections = [i.building for i in self.game.board.intersections.values()]
+        s = np.append(s, intersections)
+
+        #   paths:
+        paths = [b.building for h, b in self.game.board.paths.items()]
+        # for h, b in self.game.board.paths.items():
+        #     for v in h:
+        #         paths.append(v.q)
+        #         paths.append(v.r)
+        #     paths.append(b.building)
+        s = np.append(s, paths)
+
+        # robber = [self.game.board.robber.q, self.game.board.robber.r]
+        # s = np.append(s, robber)
+
+        for p in self.game.players:
+            resources = [n for r, n in p.resources.items()]
+            s = np.append(s, resources)
+
+            connected_harbors = [len(p.connected_harbors)]
+            for h in p.connected_harbors:
+                for v in h:
+                    connected_harbors.append(v.q)
+                    connected_harbors.append(v.r)
+            s = np.append(s, connected_harbors)
+
+            # development_cards = [[r.value,n] for r,n in p.development_cards.items()]
+            # s = np.append(s, development_cards)
+            # s = np.append(s, p.number_played_knights)
+
+        return np.array(s, dtype=np.float)
 
     def get_actions(self):
         """return a list of all the actions"""
@@ -133,13 +228,14 @@ class Catan(object):
                 for c in valid_coords:
                     available_actions.append((BuildingType.SETTLEMENT, c))
             else:
-                road_options = self.game.board.get_valid_road_coords(self.current_player, connected_intersection=self.picked_settl_coo)
+                road_options = self.game.board.get_valid_road_coords(self.current_player,
+                                                                     connected_intersection=self.picked_settl_coo)
                 for r in road_options:
                     available_actions.append((BuildingType.ROAD, r))
 
         else:
 
-            available_actions.append((4,)) #end turn
+            available_actions.append((4,))  # end turn
             possible_trades = list(self.current_player.get_possible_trades())
             for t in possible_trades:
                 available_actions.append((3, t))
@@ -148,7 +244,7 @@ class Catan(object):
             for c in valid_coords:
                 available_actions.append((BuildingType.ROAD, c))
 
-            #build city
+            # build city
             if self.current_player.has_resources(BuildingType.CITY.get_required_resources()):
                 # Get the valid city coords
                 valid_coords = self.game.board.get_valid_city_coords(self.current_player)
@@ -181,12 +277,13 @@ class Catan(object):
                 self.cur_id_player = self.player_order.pop()
                 self.current_player = self.game.players[self.cur_id_player]
 
-        elif action[0] == 1:    # settlement
+        elif action[0] == 1:  # settlement
             coords = action[1]
-            self.game.build_settlement(self.current_player, ensure_connected=(not initialization_stage), cost_resources=(not initialization_stage))
+            self.game.build_settlement(self.current_player, ensure_connected=(not initialization_stage),
+                                       cost_resources=(not initialization_stage))
             if initialization_stage:
                 self.picked_settl_coo = coords
-                if len(self.player_order) <= len(self.game.players)+1:
+                if len(self.player_order) <= len(self.game.players) + 1:
                     self.current_player.add_resources(self.game.board.get_hex_resources_for_intersection(coords))
 
         elif action[0] == 2:
@@ -205,8 +302,9 @@ class Catan(object):
             print("Congratuations! Player %d wins!" % (self.cur_id_player + 1))
             print("Final board:")
             print(self.game.board)
-            players=self.game.players
+            players = self.game.players
             reward = [self.game.get_victory_points(p) for p in players]
         return reward
 
-# catan = Catan()
+
+catan = Catan()
