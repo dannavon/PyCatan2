@@ -1,7 +1,7 @@
 import numpy as np
 
 from pycatan import Game, DevelopmentCard, Resource
-from pycatan.board import BeginnerBoard, BoardRenderer, BuildingType, Coords
+from pycatan.board import BeginnerBoard, BoardRenderer, BuildingType, Coords, IntersectionBuilding, PathBuilding
 import string
 import random
 import sys
@@ -122,12 +122,30 @@ class Catan(object):
         self.current_player = self.game.players[self.cur_id_player]
 
         self.dice = state[1]
-        self.game.largest_army_owner = state[2]
-        self.game.longest_road_owner = state[3]
+        # self.game.largest_army_owner = state[2]
+        self.game.longest_road_owner = state[2]
 
-        i = 4
+        i = 3
         for k, v in self.game.board.intersections.items():
-            self.game.board.intersections[k].building = state[i]
+            if state[i] is not np.nan:
+                player = self.game.players[state[i] / 10]
+                type = state[i] % 10
+                if self.game.board.intersections[k].building is not np.nan:
+                    self.game.board.intersections[k].building.owner = player
+                    self.game.board.intersections[k].building.building_type = type
+                else:
+                    self.game.board.intersections[k].building = IntersectionBuilding(player, type, k)
+            i += 1
+
+        for k, v in self.game.board.paths.items():
+            if state[i] is not np.nan:
+                player = self.game.players[state[i] / 10]
+                type = state[i] % 10
+                if self.game.board.paths[k].building is not np.nan:
+                    self.game.board.paths[k].building.owner = player
+                    self.game.board.paths[k].building.building_type = type
+                else:
+                    self.game.board.paths[k].building = PathBuilding(player, type, k)
             i += 1
 
         for k, v in self.game.board.paths.items():
@@ -169,7 +187,7 @@ class Catan(object):
         s = np.array([], dtype=np.float)  # state representation.
         s = np.append(s, self.cur_id_player)
         s = np.append(s, self.dice)
-        s = np.append(s, self.game.largest_army_owner)
+        # s = np.append(s, self.game.largest_army_owner)
         s = np.append(s, self.game.longest_road_owner)
         # s = np.append(s, self.game.development_card_deck)
         # serialize board:
@@ -187,17 +205,20 @@ class Catan(object):
 
         #   intersections:
         # intersections = [[i.coords.q, i.coords.r, i.building] for i in self.game.board.intersections.values()]
-        intersections = [i.building for i in self.game.board.intersections.values()]
-        s = np.append(s, intersections)
+        for i in self.game.board.intersections.values():
+            structure_type = np.nan
+            if i.building is not None:
+                structure_type = i.building.owner*10+i.building.building_type
+            s = np.append(s, structure_type)
 
         #   paths:
-        paths = [b.building for h, b in self.game.board.paths.items()]
-        # for h, b in self.game.board.paths.items():
-        #     for v in h:
-        #         paths.append(v.q)
-        #         paths.append(v.r)
-        #     paths.append(b.building)
-        s = np.append(s, paths)
+        # paths = [b.building.owner for h, b in self.game.board.paths.items()]
+
+        for h, b in self.game.board.paths.items():
+            structure_type = np.nan
+            if b.building is not None:
+                structure_type = b.building.owner * 10 + b.building.building_type
+            s = np.append(s, structure_type)
 
         # robber = [self.game.board.robber.q, self.game.board.robber.r]
         # s = np.append(s, robber)
@@ -206,18 +227,30 @@ class Catan(object):
             resources = [n for r, n in p.resources.items()]
             s = np.append(s, resources)
 
-            connected_harbors = [len(p.connected_harbors)]
-            for h in p.connected_harbors:
-                for v in h:
-                    connected_harbors.append(v.q)
-                    connected_harbors.append(v.r)
-            s = np.append(s, connected_harbors)
+            # connected_harbors = [len(p.connected_harbors)]
+            # for h in p.connected_harbors:
+            #     for v in h:
+            #         connected_harbors.append(v.q)
+            #         connected_harbors.append(v.r)
+            # s = np.append(s, connected_harbors)
 
             # development_cards = [[r.value,n] for r,n in p.development_cards.items()]
             # s = np.append(s, development_cards)
             # s = np.append(s, p.number_played_knights)
 
+        # Connect the player to a harbor if they can
+
+        for c, h in self.game.board.harbors.items():
+            h_assigned_to = np.nan
+            for i, p in enumerate(self.game.players):
+                if c in p.connected_harbors:
+                    h_assigned_to = i
+                    continue
+            s = np.append(s, h_assigned_to)
+
         return np.array(s, dtype=np.float)
+
+
 
     def get_actions(self):
         """return a list of all the actions"""
@@ -305,6 +338,9 @@ class Catan(object):
             players = self.game.players
             reward = [self.game.get_victory_points(p) for p in players]
         return reward
+
+    def has_ended(self):
+        return self.game.get_victory_points(self.current_player) >= 10
 
 
 catan = Catan()
