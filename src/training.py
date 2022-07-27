@@ -4,14 +4,13 @@ import sys
 import torch
 import torch.nn as nn
 import tqdm.auto
-from torch import Tensor
-from typing import Any, Tuple, Callable, Optional, cast
+from typing import Any, Callable, Optional
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 
-from cs236781.train_results import FitResult, BatchResult, EpochResult
+from train_results import FitResult, BatchResult, EpochResult
 
-from .classifier import Classifier
+from mlp import MLP
 
 
 class Trainer(abc.ABC):
@@ -79,10 +78,6 @@ class Trainer(abc.ABC):
                 verbose = True
             self._print(f"--- EPOCH {epoch+1}/{num_epochs} ---", verbose)
 
-            # TODO: Train & evaluate for one epoch
-            #  - Use the train/test_epoch methods.
-            #  - Save losses and accuracies in the lists above.
-            # ====== YOUR CODE: ======
             train_result = self.train_epoch(dl_train, **kw)
             test_result = self.test_epoch(dl_test, **kw)
             train_loss.append(float(train_result.losses[-1]))
@@ -92,28 +87,16 @@ class Trainer(abc.ABC):
 
             actual_num_epochs += 1
 
-            # ========================
-
-            # TODO:
-            #  - Optional: Implement early stopping. This is a very useful and
-            #    simple regularization technique that is highly recommended.
-            #  - Optional: Implement checkpoints. You can use the save_checkpoint
-            #    method on this class to save the model to the file specified by
-            #    the checkpoints argument.
             if best_acc is None or test_result.accuracy > best_acc:
-                # ====== YOUR CODE: ======
                 best_acc = test_result.accuracy
 
                 if checkpoints is not None:
                     self.save_checkpoint(checkpoints)
-                # ========================
             else:
-                # ====== YOUR CODE: ======
                 epochs_without_improvement += 1
 
                 if early_stopping is not None and early_stopping <= epochs_without_improvement:
                     break
-                # ========================
 
         return FitResult(actual_num_epochs, train_loss, train_acc, test_loss, test_acc)
 
@@ -232,14 +215,14 @@ class Trainer(abc.ABC):
         return EpochResult(losses=losses, accuracy=accuracy)
 
 
-class ClassifierTrainer(Trainer):
+class MLPTrainer(Trainer):
     """
     Trainer for our Classifier-based models.
     """
 
     def __init__(
         self,
-        model: Classifier,
+        model: MLP,
         loss_fn: nn.Module,
         optimizer: Optimizer,
         device: Optional[torch.device] = None,
@@ -261,16 +244,9 @@ class ClassifierTrainer(Trainer):
             X = X.to(self.device)
             y = y.to(self.device)
 
-        self.model: Classifier
+        self.model: MLP
         batch_loss: float
-        num_correct: int
 
-        # TODO: Train the model on one batch of data.
-        #  - Forward pass
-        #  - Backward pass
-        #  - Update parameters
-        #  - Classify and calculate number of correct predictions
-        # ====== YOUR CODE: ======
         # Forward
         y_pred = self.model(X)
         # Compute loss
@@ -281,13 +257,8 @@ class ClassifierTrainer(Trainer):
         loss.backward()
         # Optimization step
         self.optimizer.step()
-        #Classify and calculate number of correct predictions
-        y_pred_c = self.model.classify(X)
-        num_correct = torch.sum((y == y_pred_c).int()).item()
 
-        # ========================
-
-        return BatchResult(batch_loss, num_correct)
+        return BatchResult(batch_loss, 0)
 
     def test_batch(self, batch) -> BatchResult:
         X, y = batch
@@ -295,63 +266,13 @@ class ClassifierTrainer(Trainer):
             X = X.to(self.device)
             y = y.to(self.device)
 
-        self.model: Classifier
+        self.model: MLP
         batch_loss: float
-        num_correct: int
 
         with torch.no_grad():
-            # TODO: Evaluate the model on one batch of data.
-            #  - Forward pass
-            #  - Calculate number of correct predictions
-            # ====== YOUR CODE: ======
-
             # Forward pass
             y_pred = self.model(X)
-            y_pred_c = self.model.classify(X)
             # Compute loss
             batch_loss = self.loss_fn(y_pred, y).item()
-            num_correct = torch.sum((y == y_pred_c).int()).item()
-            # ========================
 
-        return BatchResult(batch_loss, num_correct)
-
-
-class LayerTrainer(Trainer):
-    def __init__(self, model, loss_fn, optimizer):
-        # ====== YOUR CODE: ======
-        self.model = model
-        self.loss_fn = loss_fn
-        self.optimizer = optimizer
-        # ========================
-
-    def train_batch(self, batch) -> BatchResult:
-        X, y = batch
-
-        # TODO: Train the Layer model on one batch of data.
-        #  - Forward pass
-        #  - Backward pass
-        #  - Optimize params
-        #  - Calculate number of correct predictions (make sure it's an int,
-        #    not a tensor) as num_correct.
-        # ====== YOUR CODE: ======
-        self.optimizer.zero_grad()
-        yh = self.model.forward(X.reshape((X.size()[0], int(torch.prod(torch.Tensor(list(X.size())[1:])).item()))))
-        loss = self.loss_fn(yh, y)
-        self.model.backward(self.loss_fn.backward())
-        self.optimizer.step()
-        num_correct = int(torch.sum(torch.argmax(yh, dim=1) == y))
-        # ========================
-
-        return BatchResult(loss, num_correct)
-
-    def test_batch(self, batch) -> BatchResult:
-        X, y = batch
-
-        # TODO: Evaluate the Layer model on one batch of data.
-        # ====== YOUR CODE: ======
-        yh = self.model.forward(X.reshape((X.size()[0], int(torch.prod(torch.Tensor(list(X.size())[1:])).item()))))
-        loss = self.loss_fn(yh, y)
-        num_correct = int(torch.sum(torch.argmax(yh, dim=1) == y))
-        # ========================
-
-        return BatchResult(loss, num_correct)
+        return BatchResult(batch_loss, 0)

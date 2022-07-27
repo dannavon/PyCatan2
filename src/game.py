@@ -1,9 +1,9 @@
-import numpy as np
+from torch import Tensor
 
 
 class Game:
     def __init__(self):
-        self.state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+        self.state = Tensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
         self.turn = 0
 
     def set_state(self, state):
@@ -16,6 +16,9 @@ class Game:
     def get_actions(self):
         """return a list of all the actions"""
         return [i for i in range(9) if self.state[int(i / 3), i % 3] == 0]
+
+    def get_turn(self):
+        return self.turn
 
     def make_action(self, action):
         """return the reward. if the game continues, return 0 for each player"""
@@ -40,5 +43,11 @@ class Game:
         return 0, 0
 
     def restart(self):
-        self.state = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+        self.state = Tensor([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
         self.turn = 0
+
+    def get_players_num(self):
+        return 2
+
+    def get_state_size(self):
+        return 9
