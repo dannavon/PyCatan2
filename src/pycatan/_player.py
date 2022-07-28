@@ -15,11 +15,12 @@ class Player:
             connected_harbors (Set[Harbor]): The harbors this player is connected to. Used to determine the valid trades
     """
 
-    def __init__(self):
+    def __init__(self, id):
         self.resources: Dict[Resource, int] = {res: 0 for res in Resource}
         self.development_cards = {d: 0 for d in DevelopmentCard}
         self.connected_harbors = set()
         self.number_played_knights = 0
+        self.id = id
 
     def has_resources(self, resources: Dict[Resource, int]) -> bool:
         """Check if the player has the resources given.

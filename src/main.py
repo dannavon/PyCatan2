@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 from mcts import mcts_get_best_action
 from mlp import MLP
 from game import Game
+from catan_wrp import Catan
+import sys
 from dataset import Dataset
 import torch
 from torch import Tensor
@@ -88,4 +90,27 @@ def mcts_test():
 
 
 if __name__ == '__main__':
-    mlp_test()
+    # mlp_test()
+
+    catan_game = Catan()
+    model = create_model(catan_game.get_state_size(), catan_game.get_players_num())
+    # model = create_model(158, 4)
+    ds = Dataset(hp_training['batch_size'], hp_training['valid_ratio'], hp_training['test_ratio'])
+    while True:
+        best_action = mcts_get_best_action(catan_game, model, hp_mcts['c'], 50)
+        print(best_action)
+        if best_action[0] == 4:
+            print("Player " + str(catan_game.get_turn()+1) + " turn!, dice: " + str(catan_game.dice))
+
+        reward = catan_game.make_action(best_action)
+        ds.add_sample(catan_game.get_state())
+        if catan_game.has_ended():
+            ds.set_label(reward)
+
+            dl_train, dl_valid, dl_test = ds.get_data_loaders()
+            fit_res = train(dl_train, dl_valid, dl_test, model)
+            plot_fit(fit_res, log_loss=False, train_test_overlay=True)
+            plt.show()
+            print(ds)
+
+            sys.exit(0)

@@ -4,6 +4,7 @@ from pycatan import Game, DevelopmentCard, Resource
 from pycatan.board import BeginnerBoard, BoardRenderer, BuildingType, Coords, IntersectionBuilding, PathBuilding
 import string
 import random
+from torch import Tensor
 import sys
 from copy import deepcopy
 
@@ -24,6 +25,12 @@ class Catan(object):
 
         # Roll the dice
         self.dice = self.roll_dice()
+
+    def get_players_num(self):
+        return len(self.game.players)
+
+    def get_state_size(self):
+        return 158
 
     def restart(self):
         return self.__class__()
@@ -123,14 +130,17 @@ class Catan(object):
 
         self.dice = state[1]
         # self.game.largest_army_owner = state[2]
-        self.game.longest_road_owner = state[2]
+        if state[2] == 0:
+            self.game.longest_road_owner = None
+        else:
+            self.game.longest_road_owner = self.current_player(state[2]-1)
 
         i = 3
         for k, v in self.game.board.intersections.items():
-            if state[i] is not np.nan:
+            if state[i] != 0:
                 player = self.game.players[state[i] / 10]
                 type = state[i] % 10
-                if self.game.board.intersections[k].building is not np.nan:
+                if self.game.board.intersections[k].building != None:
                     self.game.board.intersections[k].building.owner = player
                     self.game.board.intersections[k].building.building_type = type
                 else:
@@ -138,23 +148,18 @@ class Catan(object):
             i += 1
 
         for k, v in self.game.board.paths.items():
-            if state[i] is not np.nan:
+            if state[i] != 0:
                 player = self.game.players[state[i] / 10]
-                type = state[i] % 10
-                if self.game.board.paths[k].building is not np.nan:
+                if self.game.board.paths[k].building is not None:
                     self.game.board.paths[k].building.owner = player
                     self.game.board.paths[k].building.building_type = type
                 else:
-                    self.game.board.paths[k].building = PathBuilding(player, type, k)
-            i += 1
-
-        for k, v in self.game.board.paths.items():
-            self.game.board.paths[k].building = state[i]
+                    self.game.board.paths[k].building = PathBuilding(player, BuildingType.ROAD, k)
             i += 1
 
         for p in self.game.players:
             for r, n in p.resources.items():
-                p.resources[r]= state[i]
+                p.resources[r] = state[i]
                 i += 1
 
             if len(p.connected_harbors) == state[i]:
@@ -188,7 +193,11 @@ class Catan(object):
         s = np.append(s, self.cur_id_player)
         s = np.append(s, self.dice)
         # s = np.append(s, self.game.largest_army_owner)
-        s = np.append(s, self.game.longest_road_owner)
+        if self.game.longest_road_owner is not None:
+            a = self.game.longest_road_owner.id + 1
+        else:
+            a = 0
+        s = np.append(s, a)
         # s = np.append(s, self.game.development_card_deck)
         # serialize board:
         #   hexes:
@@ -206,18 +215,18 @@ class Catan(object):
         #   intersections:
         # intersections = [[i.coords.q, i.coords.r, i.building] for i in self.game.board.intersections.values()]
         for i in self.game.board.intersections.values():
-            structure_type = np.nan
+            structure_type = 0
             if i.building is not None:
-                structure_type = i.building.owner*10+i.building.building_type
+                structure_type = i.building.owner.id*10+i.building.building_type.value
             s = np.append(s, structure_type)
 
         #   paths:
         # paths = [b.building.owner for h, b in self.game.board.paths.items()]
 
         for h, b in self.game.board.paths.items():
-            structure_type = np.nan
+            structure_type = 0
             if b.building is not None:
-                structure_type = b.building.owner * 10 + b.building.building_type
+                structure_type = b.building.owner.id * 10 + 1
             s = np.append(s, structure_type)
 
         # robber = [self.game.board.robber.q, self.game.board.robber.r]
@@ -241,16 +250,14 @@ class Catan(object):
         # Connect the player to a harbor if they can
 
         for c, h in self.game.board.harbors.items():
-            h_assigned_to = np.nan
+            h_assigned_to = 0
             for i, p in enumerate(self.game.players):
                 if c in p.connected_harbors:
-                    h_assigned_to = i
+                    h_assigned_to = i+1
                     continue
             s = np.append(s, h_assigned_to)
 
-        return np.array(s, dtype=np.float)
-
-
+        return Tensor(np.array(s, dtype=np.float))
 
     def get_actions(self):
         """return a list of all the actions"""
@@ -267,22 +274,17 @@ class Catan(object):
                     available_actions.append((BuildingType.ROAD, r))
 
         else:
-
             available_actions.append((4,))  # end turn
             possible_trades = list(self.current_player.get_possible_trades())
             for t in possible_trades:
-                available_actions.append((3, t))
-            # Get the valid road coords
-            valid_coords = self.game.board.get_valid_road_coords(self.current_player)
-            for c in valid_coords:
-                available_actions.append((BuildingType.ROAD, c))
+                available_actions.append((3, tuple(t.items())))
 
             # build city
             if self.current_player.has_resources(BuildingType.CITY.get_required_resources()):
                 # Get the valid city coords
                 valid_coords = self.game.board.get_valid_city_coords(self.current_player)
                 for c in valid_coords:
-                    available_actions.append((BuildingType.SETTLEMENT, c))
+                    available_actions.append((BuildingType.CITY, c))
 
             # build settlement
             if self.current_player.has_resources(BuildingType.SETTLEMENT.get_required_resources()):
@@ -302,7 +304,12 @@ class Catan(object):
 
     def make_action(self, action):
         initialization_stage = len(self.player_order) > 0
-        if action[0] == 0:  # road
+        if hasattr(action[0], 'value'):
+            a = action[0].value
+        else:
+            a = action[0]
+
+        if a == 0:  # road
             coords = action[1]
             self.game.build_road(self.current_player, coords, cost_resources=(not initialization_stage))
             if initialization_stage:
@@ -310,24 +317,24 @@ class Catan(object):
                 self.cur_id_player = self.player_order.pop()
                 self.current_player = self.game.players[self.cur_id_player]
 
-        elif action[0] == 1:  # settlement
+        elif a == 1:  # settlement
             coords = action[1]
-            self.game.build_settlement(self.current_player, ensure_connected=(not initialization_stage),
+            self.game.build_settlement(self.current_player, coords, ensure_connected=(not initialization_stage),
                                        cost_resources=(not initialization_stage))
             if initialization_stage:
                 self.picked_settl_coo = coords
                 if len(self.player_order) <= len(self.game.players) + 1:
                     self.current_player.add_resources(self.game.board.get_hex_resources_for_intersection(coords))
 
-        elif action[0] == 2:
+        elif a == 2:
             coords = action[1]
             self.game.upgrade_settlement_to_city(self.current_player, coords)
 
-        elif action[0] == 3:
-            trade = action[1]
+        elif a == 3:
+            trade = dict(action[1])
             self.current_player.add_resources(trade)
 
-        elif action[0] == 4:
+        elif a == 4:
             self.end_turn()
 
         reward = [0, 0, 0, 0]
@@ -337,7 +344,7 @@ class Catan(object):
             print(self.game.board)
             players = self.game.players
             reward = [self.game.get_victory_points(p) for p in players]
-        return reward
+        return Tensor(reward)
 
     def has_ended(self):
         return self.game.get_victory_points(self.current_player) >= 10

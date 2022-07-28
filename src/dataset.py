@@ -43,7 +43,7 @@ class Dataset:
 
         return x_train, y_train, x_valid, y_valid, x_test, y_test
 
-    def get_data_loaders(self, batch_size):
+    def get_data_loaders(self):
         """
         :param batch_size: the size of the batch
         :return dl_train, dl_valid, dl_test:
@@ -58,7 +58,7 @@ class Dataset:
                 ),
                 shuffle=True,
                 num_workers=0,
-                batch_size=batch_size
+                batch_size=self.batch_size
             )
             for X_, y_ in [(X_train, y_train), (X_valid, y_valid), (X_test, y_test)]
         ]

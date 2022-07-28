@@ -28,7 +28,7 @@ class Game:
 
     def __init__(self, board: Board, num_players: Optional[int] = 4):
         self.board = board
-        self.players = [Player() for i in range(num_players)]
+        self.players = [Player(i) for i in range(num_players)]
         self.longest_road_owner = None
         self.largest_army_owner = None
         self.development_card_deck = (
