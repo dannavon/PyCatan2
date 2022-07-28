@@ -49,7 +49,7 @@ class BoardRenderer:
     def __init__(
         self,
         board: _board.Board,
-        player_color_map: Optional[Dict[Player, str]] = {},
+        player_color_map: Optional[Dict[int, str]] = {},
         hex_color_map: Optional[Dict[HexType, str]] = DEFAULT_HEX_COLORS,
         resource_color_map: Optional[Dict[Resource, str]] = DEFAULT_RESOURCE_COLORS,
     ):
@@ -60,9 +60,9 @@ class BoardRenderer:
         self.resource_color_map = resource_color_map
 
     def _get_player_color(self, player: Player):
-        if player not in self.player_color_map:
-            self.player_color_map[player] = self._unused_player_colors.pop(0)
-        return self.player_color_map[player]
+        if player.id not in self.player_color_map:
+            self.player_color_map[player.id] = self._unused_player_colors.pop(0)
+        return self.player_color_map[player.id]
 
     def _get_path(self, chars, path, path_labels):
         fore = "#9c7500"
