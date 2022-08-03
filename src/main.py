@@ -38,7 +38,7 @@ def create_demo_data_loaders():
             dataset.add_sample(torch.rand(9))
         dataset.set_label(Tensor((game_num + 0.1, game_num + 1.1)))
 
-    return dataset.get_data_loaders(hp_training['batch_size'])
+    return dataset.get_data_loaders()
 
 
 def create_model(in_dim, out_dim):
