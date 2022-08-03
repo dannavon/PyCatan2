@@ -24,7 +24,7 @@ hp_optimizer = dict(lr=0.001,
                     momentum=0.99)
 
 hp_model = dict(hidden_layers_num=1,
-                hidden_layers_size=5,
+                hidden_layers_size=20,
                 activation='relu')
 
 hp_mcts = dict(c=1)
@@ -105,6 +105,9 @@ if __name__ == '__main__':
         reward = catan_game.make_action(best_action)
         ds.add_sample(catan_game.get_state())
         if catan_game.has_ended():
+            print("Congratulations! Player %d wins!" % (catan_game.cur_id_player + 1))
+            print("Final board:")
+            print(catan_game.game.board)
             ds.set_label(reward)
 
             dl_train, dl_valid, dl_test = ds.get_data_loaders()

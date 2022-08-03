@@ -341,9 +341,6 @@ class Catan(object):
             self.end_turn()
 
         if self.game.get_victory_points(self.current_player) >= 10:
-            print("Congratulations! Player %d wins!" % (self.cur_id_player + 1))
-            print("Final board:")
-            print(self.game.board)
             players = self.game.players
             reward = [self.game.get_victory_points(p) for p in players]
         return Tensor(reward)
