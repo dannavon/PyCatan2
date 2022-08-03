@@ -304,6 +304,8 @@ class Catan(object):
 
     def make_action(self, action):
         initialization_stage = len(self.player_order) > 0
+        reward = [0, 0, 0, 0]
+
         if hasattr(action[0], 'value'):
             a = action[0].value
         else:
@@ -329,6 +331,7 @@ class Catan(object):
         elif a == 2:
             coords = action[1]
             self.game.upgrade_settlement_to_city(self.current_player, coords)
+            reward[self.cur_id_player] = 1
 
         elif a == 3:
             trade = dict(action[1])
@@ -337,9 +340,8 @@ class Catan(object):
         elif a == 4:
             self.end_turn()
 
-        reward = [0, 0, 0, 0]
         if self.game.get_victory_points(self.current_player) >= 10:
-            print("Congratuations! Player %d wins!" % (self.cur_id_player + 1))
+            print("Congratulations! Player %d wins!" % (self.cur_id_player + 1))
             print("Final board:")
             print(self.game.board)
             players = self.game.players
@@ -350,4 +352,3 @@ class Catan(object):
         return self.game.get_victory_points(self.current_player) >= 10
 
 
-catan = Catan()
