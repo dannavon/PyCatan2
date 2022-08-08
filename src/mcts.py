@@ -24,7 +24,7 @@ def iteration(root, game, dnn, c):
 
     original_state = game.get_state()
     reward, action_leaf, new_state = selection(root, game, c)
-    if sum(reward) == 0:
+    if not game.is_over():
         action_leaf = expansion(action_leaf, new_state, game)
         reward = dnn.forward(new_state)
     back_propagation(action_leaf, reward)
@@ -58,12 +58,12 @@ def selection(root, game, c):
             root = root.sons[best_action]
             reward = game.make_action(best_action)
         else:
-            if sum(reward) == 0:
+            if not game.is_over():
                 state = game.get_state()
                 if tuple(state) in root.sons:
                     root = root.sons[tuple(state)]
                 else:
-                    return [0] * game.get_players_num(), root, state
+                    return reward, root, state
             else:
                 return reward, root, None
 

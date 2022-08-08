@@ -102,6 +102,7 @@ class Game:
         if cost_resources and not player.has_resources(
             BuildingType.ROAD.get_required_resources()
         ):
+            print("cost_resources: " + str(cost_resources))
             raise NotEnoughResourcesError(
                 "Player doesn not have the resources to build a road"
             )
