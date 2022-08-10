@@ -99,15 +99,18 @@ if __name__ == '__main__':
     while True:
         best_action = mcts_get_best_action(catan_game, model, hp_mcts['c'], 50)
         print("Player " + str(catan_game.get_turn()+1) + ", action:" + str(best_action))
-        if best_action[0] == 4:
-            print("Player " + str(catan_game.get_turn()+1) + " turn!, dice: " + str(catan_game.dice))
 
         reward = catan_game.make_action(best_action)
+        if best_action[0] == 4:
+            print("Player " + str(catan_game.get_turn()+1) + " turn!, dice: " + str(catan_game.dice))
+            # print(catan_game.game.board)
+
         ds.add_sample(catan_game.get_state())
         if catan_game.is_over():
             print("Congratulations! Player %d wins!" % (catan_game.cur_id_player + 1))
             print("Final board:")
             print(catan_game.game.board)
+
             ds.set_label(reward)
 
             dl_train, dl_valid, dl_test = ds.get_data_loaders()

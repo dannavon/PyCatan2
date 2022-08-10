@@ -382,20 +382,30 @@ class Catan(object):
 
             self.game.build_settlement(self.current_player, coords, ensure_connected=(not is_init_state),
                                        cost_resources=(not is_init_state))
-            reward[self.cur_id_player] = 1
+            reward[self.cur_id_player] = 3
 
         elif a == 2:
             coords = action[1]
             self.game.upgrade_settlement_to_city(self.current_player, coords)
-            reward[self.cur_id_player] = 2
+            reward[self.cur_id_player] = 5
 
         elif a == 3:
             trade = dict(action[1])
             self.current_player.add_resources(trade)
-            reward[self.cur_id_player] = -0.15
+            reward[self.cur_id_player] = -0.3
 
         elif a == 4:
             self.end_turn()
+            # intersection_coords = self.game.board.get_valid_settlement_coords(self.current_player, ensure_connected=False)
+            # intersection_list = [self.game.board.intersections[i] for i in intersection_coords]
+            # intersection_list.sort(key=lambda i: self.get_coord_sort_by_xy(i.coords))
+            # intersection_labels = {intersection_list[i]: self.label_letters[i] for i in range(len(intersection_list))}
+            # self.renderer.render_board(intersection_labels=intersection_labels)
+            # hex_coords = [c for c in self.game.board.hexes]
+            # hex_list = [self.game.board.hexes[i] for i in hex_coords]
+            # hex_list.sort(key=lambda h: self.get_coord_sort_by_xy(h.coords))
+            # hex_labels = {hex_list[i]: self.label_letters[i] for i in range(len(hex_list))}
+            # self.renderer.render_board(hex_labels=hex_labels)
 
         if self.is_over():
             players = self.game.players

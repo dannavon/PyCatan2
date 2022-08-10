@@ -26,7 +26,7 @@ def iteration(root, game, dnn, c):
     reward, action_leaf, new_state = selection(root, game, c)
     if not game.is_over():
         action_leaf = expansion(action_leaf, new_state, game)
-        reward = dnn.forward(new_state)
+        # reward = dnn.forward(new_state) + 100*reward
     back_propagation(action_leaf, reward)
     game.set_state(original_state)
 
@@ -119,10 +119,20 @@ def mcts_get_best_action(game, dnn, c, iterations_num):
         iteration(root, game, dnn, c)
 
     best_action = None
-    biggest_visits_num = -1
+    biggest_w = -np.inf
     for action in root.sons:
-        visits_num = root.sons[action].N
-        if visits_num > biggest_visits_num:
-            biggest_visits_num = visits_num
+        w = root.sons[action].w
+        if w > biggest_w:
+            biggest_w = w
             best_action = action
     return best_action
+
+
+    # best_action = None
+    # biggest_visits_num = -1
+    # for action in root.sons:
+    #     visits_num = root.sons[action].N
+    #     if visits_num > biggest_visits_num:
+    #         biggest_visits_num = visits_num
+    #         best_action = action
+    # return best_action
