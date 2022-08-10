@@ -110,7 +110,6 @@ if __name__ == '__main__':
             print("Congratulations! Player %d wins!" % (catan_game.cur_id_player + 1))
             print("Final board:")
             print(catan_game.game.board)
-
             ds.set_label(reward)
 
             dl_train, dl_valid, dl_test = ds.get_data_loaders()
