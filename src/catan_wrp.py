@@ -392,7 +392,7 @@ class Catan(object):
         elif a == 3:
             trade = dict(action[1])
             self.current_player.add_resources(trade)
-
+            reward[self.cur_id_player] = -0.3
         elif a == 4:
             self.end_turn()
 

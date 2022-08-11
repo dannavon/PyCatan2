@@ -27,7 +27,12 @@ hp_model = dict(hidden_layers_num=1,
                 hidden_layers_size=20,
                 activation='relu')
 
-hp_mcts = dict(c=1)
+hp_mcts = dict(c=1,
+               d=1)
+
+
+def heuristic(state):
+    return Tensor([0, 0, 0, 0])
 
 
 def create_demo_data_loaders():
@@ -86,7 +91,7 @@ def mlp_test():
 def mcts_test():
     game = Game()
     model = create_model(game.get_state_size(), game.get_players_num())
-    print(mcts_get_best_action(game, model, hp_mcts['c'], 50))
+    print(mcts_get_best_action(game, model, hp_mcts['c'], hp_mcts['d'], 50, heuristic=heuristic))
 
 
 if __name__ == '__main__':
@@ -97,7 +102,7 @@ if __name__ == '__main__':
     # model = create_model(158, 4)
     ds = Dataset(hp_training['batch_size'], hp_training['valid_ratio'], hp_training['test_ratio'])
     while True:
-        best_action = mcts_get_best_action(catan_game, model, hp_mcts['c'], 50)
+        best_action = mcts_get_best_action(catan_game, model, hp_mcts['c'], hp_mcts['d'], 50, heuristic=heuristic)
         print("Player " + str(catan_game.get_turn()+1) + ", action:" + str(best_action))
         if best_action[0] == 4:
             print("Player " + str(catan_game.get_turn()+1) + " turn!, dice: " + str(catan_game.dice))
