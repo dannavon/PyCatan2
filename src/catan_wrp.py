@@ -123,6 +123,24 @@ class Catan(object):
 
         self.roll_dice()
 
+    def heuristic(self, state):
+        heur = Tensor([0, 0, 0, 0])
+
+        for p in self.game.players:
+            h = 0
+
+            resources = [n for r, n in p.resources.items()]
+            num_of_res = np.sum(resources)
+            h += num_of_res/10
+
+            valid_coords = self.game.board.get_valid_settlement_coords(p, ensure_connected=True)
+            h += len(valid_coords)*0.8
+
+            h += self.game.get_victory_points(p)*2
+
+            heur[p.id] = h
+        return heur
+
     def set_state(self, state):
         """change the state of the game to the given state"""
         state = state.numpy()
