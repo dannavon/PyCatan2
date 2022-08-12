@@ -16,7 +16,7 @@ class MCTSNode:
         self.sons = {}
 
 
-def iteration(root, game, dnn, c, d, heuristic):
+def iteration(root, game, dnn, c, d):
     """
     make one iteration of the MCTS
     :return: void
@@ -26,7 +26,8 @@ def iteration(root, game, dnn, c, d, heuristic):
     reward, action_leaf, new_state = selection(root, game, c)
     if not game.is_over():
         action_leaf = expansion(action_leaf, new_state, game)
-        reward = dnn.forward(new_state) + d * heuristic(new_state)
+        reward = d * game.heuristic(new_state)
+        # reward += dnn.forward(new_state)
     back_propagation(action_leaf, reward)
     game.set_state(original_state)
 
@@ -100,7 +101,7 @@ def back_propagation(action_leaf, reward):
         node = node.parent
 
 
-def mcts_get_best_action(game, dnn, c, d, iterations_num, heuristic):
+def mcts_get_best_action(game, dnn, c, d, iterations_num):
     """
     :param game: the game in the current state
     :param dnn: the neural network
@@ -109,18 +110,18 @@ def mcts_get_best_action(game, dnn, c, d, iterations_num, heuristic):
     :return: the most visited action after iteration_num iterations
     """
 
-    root = MCTSNode(STATE_NODE, None, 0)
+    root = MCTSNode(STATE_NODE, None, game.get_turn())
     actions = game.get_actions()
 
     if len(actions) == 1:
         return actions[0]
 
     for action in actions:
-        son = MCTSNode(ACTION_NODE, root, 0)
+        son = MCTSNode(ACTION_NODE, root, game.get_turn())
         root.sons[action] = son
 
     for i in range(iterations_num):
-        iteration(root, game, dnn, c, d, heuristic)
+        iteration(root, game, dnn, c, d)
 
     best_action = None
     biggest_w = -np.inf

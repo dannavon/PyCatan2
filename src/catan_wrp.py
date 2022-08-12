@@ -133,8 +133,8 @@ class Catan(object):
             num_of_res = np.sum(resources)
             h += num_of_res/10
 
-            valid_coords = self.game.board.get_valid_settlement_coords(p, ensure_connected=True)
-            h += len(valid_coords)*0.8
+            # valid_coords = self.game.board.get_valid_settlement_coords(p, ensure_connected=True)
+            # h += len(valid_coords)*0.8
 
             h += self.game.get_victory_points(p)*2
 

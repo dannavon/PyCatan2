@@ -28,7 +28,8 @@ hp_model = dict(hidden_layers_num=1,
                 activation='relu')
 
 hp_mcts = dict(c=1,
-               d=1)
+               d=1,
+               iterations_num=500)
 
 
 def heuristic(state):
@@ -91,7 +92,7 @@ def mlp_test():
 def mcts_test():
     game = Game()
     model = create_model(game.get_state_size(), game.get_players_num())
-    print(mcts_get_best_action(game, model, hp_mcts['c'], hp_mcts['d'], 50, heuristic=heuristic))
+    print(mcts_get_best_action(game, model, hp_mcts['c'], hp_mcts['d'], hp_mcts['iterations_num']))
 
 
 if __name__ == '__main__':
@@ -101,8 +102,13 @@ if __name__ == '__main__':
     model = create_model(catan_game.get_state_size(), catan_game.get_players_num())
     # model = create_model(158, 4)
     ds = Dataset(hp_training['batch_size'], hp_training['valid_ratio'], hp_training['test_ratio'])
+
+    turns_num = 0
+
     while True:
-        best_action = mcts_get_best_action(catan_game, model, hp_mcts['c'], hp_mcts['d'], 50, heuristic=heuristic)
+        turns_num += 1
+
+        best_action = mcts_get_best_action(catan_game, model, hp_mcts['c'], hp_mcts['d'], hp_mcts['iterations_num'])
         print("Player " + str(catan_game.get_turn()+1) + ", action:" + str(best_action))
 
         reward = catan_game.make_action(best_action)
