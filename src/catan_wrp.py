@@ -133,8 +133,8 @@ class Catan(object):
             num_of_res = np.sum(resources)
             h += num_of_res/10
 
-            valid_coords = self.game.board.get_valid_settlement_coords(p, ensure_connected=True)
-            h += len(valid_coords)*0.8
+            # valid_coords = self.game.board.get_valid_settlement_coords(p, ensure_connected=True)
+            # h += len(valid_coords)*0.8
 
             h += self.game.get_victory_points(p)*2
 
@@ -414,16 +414,6 @@ class Catan(object):
 
         elif a == 4:
             self.end_turn()
-            # intersection_coords = self.game.board.get_valid_settlement_coords(self.current_player, ensure_connected=False)
-            # intersection_list = [self.game.board.intersections[i] for i in intersection_coords]
-            # intersection_list.sort(key=lambda i: self.get_coord_sort_by_xy(i.coords))
-            # intersection_labels = {intersection_list[i]: self.label_letters[i] for i in range(len(intersection_list))}
-            # self.renderer.render_board(intersection_labels=intersection_labels)
-            # hex_coords = [c for c in self.game.board.hexes]
-            # hex_list = [self.game.board.hexes[i] for i in hex_coords]
-            # hex_list.sort(key=lambda h: self.get_coord_sort_by_xy(h.coords))
-            # hex_labels = {hex_list[i]: self.label_letters[i] for i in range(len(hex_list))}
-            # self.renderer.render_board(hex_labels=hex_labels)
 
         if self.is_over():
             players = self.game.players
