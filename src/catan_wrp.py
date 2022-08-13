@@ -345,11 +345,6 @@ class Catan(object):
                     available_actions.append((BuildingType.ROAD, r))
 
         else:
-            available_actions.append((4,))  # end turn
-            possible_trades = list(self.current_player.get_possible_trades())
-            for t in possible_trades:
-                available_actions.append((3, tuple(t.items())))
-
             # build city
             if self.current_player.has_resources(BuildingType.CITY.get_required_resources()):
                 # Get the valid city coords
@@ -358,18 +353,25 @@ class Catan(object):
                     available_actions.append((BuildingType.CITY, c))
 
             # build settlement
-            if self.current_player.has_resources(BuildingType.SETTLEMENT.get_required_resources()):
+            if len(available_actions) == 0 and self.current_player.has_resources(BuildingType.SETTLEMENT.get_required_resources()):
                 # Get the valid settlement coords
                 valid_coords = self.game.board.get_valid_settlement_coords(self.current_player)
                 for c in valid_coords:
                     available_actions.append((BuildingType.SETTLEMENT, c))
 
-            # build road
-            if self.current_player.has_resources(BuildingType.ROAD.get_required_resources()):
-                # Get the valid road coords
-                valid_coords = self.game.board.get_valid_road_coords(self.current_player)
-                for c in valid_coords:
-                    available_actions.append((BuildingType.ROAD, c))
+            if len(available_actions) == 0:
+                # build road
+                if self.current_player.has_resources(BuildingType.ROAD.get_required_resources()):
+                    # Get the valid road coords
+                    valid_coords = self.game.board.get_valid_road_coords(self.current_player)
+                    for c in valid_coords:
+                        available_actions.append((BuildingType.ROAD, c))
+
+            possible_trades = list(self.current_player.get_possible_trades())
+            for t in possible_trades:
+                available_actions.append((3, tuple(t.items())))
+
+            available_actions.append((4,))  # end turn
 
         return available_actions
 
@@ -383,10 +385,17 @@ class Catan(object):
 
         if a == 0:  # road
             coords = action[1]
+            if not self.is_init_state():
+                valid_coords = self.game.board.get_valid_settlement_coords(self.current_player, ensure_connected=True)
+                if len(valid_coords) == 0:
+                    reward[self.cur_id_player] = 1
+
             self.game.build_road(self.current_player, coords, cost_resources=(not self.is_init_state()))
+
             if self.is_init_state():
                 self.cur_id_player = self.player_order.pop()
                 self.current_player = self.game.players[self.cur_id_player]
+
             if self.picked_settl_coo is not None:
                 self.picked_settl_coo = None
 
