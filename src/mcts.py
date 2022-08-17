@@ -57,12 +57,12 @@ def selection(root, game, c):
                     best_action_uct = uct
                     best_action = action
             root = root.sons[best_action]
-            reward = game.make_action(best_action)
+            reward = game.make_action(tuple(best_action))
         else:
             if not game.is_over():
                 state = game.get_state()
-                if tuple(state) in root.sons:
-                    root = root.sons[tuple(state)]
+                if tuple(np.array(state)) in root.sons:
+                    root = root.sons[tuple(np.array(state))]
                 else:
                     return reward, root, state
             else:
@@ -77,8 +77,8 @@ def expansion(action_leaf, new_state, game):
     :return: a random action of the new_state
     """
 
-    new_state_node = MCTSNode(STATE_NODE, action_leaf, (action_leaf.turn + 1) % game.get_players_num())
-    action_leaf.sons[tuple(new_state)] = new_state_node
+    new_state_node = MCTSNode(STATE_NODE, action_leaf, game.get_turn())
+    action_leaf.sons[tuple(np.array(np.array(new_state)))] = new_state_node
     actions = game.get_actions()
     for action in actions:
         action_node = MCTSNode(ACTION_NODE, new_state_node, new_state_node.turn)
