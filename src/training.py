@@ -44,26 +44,10 @@ class Trainer(abc.ABC):
         dl_train: DataLoader,
         dl_test: DataLoader,
         num_epochs: int,
-        checkpoints: str = None,
         early_stopping: int = None,
         print_every: int = 1,
         **kw,
     ) -> FitResult:
-        """
-        Trains the model for multiple epochs with a given training set,
-        and calculates validation loss over a given validation set.
-        :param dl_train: Dataloader for the training set.
-        :param dl_test: Dataloader for the test set.
-        :param num_epochs: Number of epochs to train for.
-        :param checkpoints: Whether to save model to file every time the
-            test set accuracy improves. Should be a string containing a
-            filename without extension.
-        :param early_stopping: Whether to stop training early if there is no
-            test loss improvement for this number of epochs.
-        :param print_every: Print progress every this number of epochs.
-        :return: A FitResult object containing train and test losses per epoch.
-        """
-
         actual_num_epochs = 0
         epochs_without_improvement = 0
 
@@ -90,8 +74,6 @@ class Trainer(abc.ABC):
             if best_acc is None or test_result.accuracy > best_acc:
                 best_acc = test_result.accuracy
 
-                if checkpoints is not None:
-                    self.save_checkpoint(checkpoints)
             else:
                 epochs_without_improvement += 1
 
@@ -99,15 +81,6 @@ class Trainer(abc.ABC):
                     break
 
         return FitResult(actual_num_epochs, train_loss, train_acc, test_loss, test_acc)
-
-    def save_checkpoint(self, checkpoint_filename: str):
-        """
-        Saves the model in it's current state to a file with the given name (treated
-        as a relative path).
-        :param checkpoint_filename: File name or relative path to save to.
-        """
-        torch.save(self.model, checkpoint_filename)
-        print(f"\n*** Saved checkpoint {checkpoint_filename}")
 
     def train_epoch(self, dl_train: DataLoader, **kw) -> EpochResult:
         """

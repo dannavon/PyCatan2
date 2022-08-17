@@ -27,10 +27,12 @@ class Catan(object):
         # Roll the dice
         self.dice = self.roll_dice()
 
-    def get_players_num(self):
-        return len(self.game.players)
+    @staticmethod
+    def get_players_num():
+        return 4
 
-    def get_state_size(self):
+    @staticmethod
+    def get_state_size():
         return 159
 
     def restart(self):
@@ -129,9 +131,9 @@ class Catan(object):
         for p in self.game.players:
             h = 0
 
-            # resources = [n for r, n in p.resources.items()]
-            # num_of_res = np.sum(resources)
-            # h += num_of_res/10
+            resources = [n for r, n in p.resources.items()]
+            num_of_res = np.sum(resources)
+            h += num_of_res/10
 
             valid_coords = self.game.board.get_valid_settlement_coords(p, ensure_connected=True)
             h += len(valid_coords)
