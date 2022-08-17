@@ -14,6 +14,7 @@ class Catan(object):
     def __init__(self):
 
         self.picked_settl_coo = None
+        self.init_state = 2
         self.game = Game(BeginnerBoard())
         self.renderer = BoardRenderer(self.game.board)
         self.label_letters = string.ascii_lowercase + string.ascii_uppercase + "123456789"
@@ -21,7 +22,7 @@ class Catan(object):
         player_order = list(range(len(self.game.players)))
         self.player_order = [0] + player_order + list(reversed(player_order))  # [0] designated for the last pop
 
-        self.cur_id_player = self.player_order.pop()
+        self.cur_id_player = 0
         self.current_player = self.game.players[self.cur_id_player]
 
         # Roll the dice
@@ -33,7 +34,7 @@ class Catan(object):
 
     @staticmethod
     def get_state_size():
-        return 159
+        return 160
 
     def restart(self):
         return self.__class__()
@@ -167,18 +168,20 @@ class Catan(object):
 
         self.picked_settl_coo = None if state[3] == 0 else 1
 
-        if self.is_init_state():
-            if self.picked_settl_coo is not None:
-                # self.player_order.append(self.cur_id_player)
-                if len(self.player_order) == 0:
-                    self.player_order.append(self.cur_id_player)
-                elif len(self.player_order) < len(self.game.players):
-                    self.player_order.append(self.cur_id_player - 1)
-                elif len(self.player_order) == len(self.game.players):
-                     self.player_order.append(self.cur_id_player)
-                else:
-                    self.player_order.append(self.cur_id_player + 1)
-        i = 4
+        self.init_state = state[4]
+
+        # if self.is_init_state():
+        #     if self.picked_settl_coo is not None:
+        #         # self.player_order.append(self.cur_id_player)
+        #         if len(self.player_order) == 0:
+        #             self.player_order.append(self.cur_id_player)
+        #         elif len(self.player_order) < len(self.game.players):
+        #             self.player_order.append(self.cur_id_player - 1)
+        #         elif len(self.player_order) == len(self.game.players):
+        #              self.player_order.append(self.cur_id_player)
+        #         else:
+        #             self.player_order.append(self.cur_id_player + 1)
+        i = 5
         for k, v in self.game.board.intersections.items():
             if state[i] != 0:
                 player = self.game.players[int(state[i] / 10)]
@@ -271,6 +274,8 @@ class Catan(object):
             a = 0
         s = np.append(s, a)
         s = np.append(s, int(self.picked_settl_coo is not None))
+        s = np.append(s, self.init_state)
+
         # s = np.append(s, self.game.development_card_deck)
         # serialize board:
         #   hexes:
@@ -332,7 +337,7 @@ class Catan(object):
 
         return torch.tensor(s, dtype=torch.float)
 
-    def get_actions(self):
+    def get_actions(self, prune=True):
         """return a list of all the actions"""
         available_actions = []
         if self.is_init_state():
@@ -355,13 +360,13 @@ class Catan(object):
                     available_actions.append((BuildingType.CITY, c))
 
             # build settlement
-            if len(available_actions) == 0 and self.current_player.has_resources(BuildingType.SETTLEMENT.get_required_resources()):
+            if (len(available_actions) == 0 or prune is False) and self.current_player.has_resources(BuildingType.SETTLEMENT.get_required_resources()):
                 # Get the valid settlement coords
                 valid_coords = self.game.board.get_valid_settlement_coords(self.current_player)
                 for c in valid_coords:
                     available_actions.append((BuildingType.SETTLEMENT, c))
 
-            if len(available_actions) == 0:
+            if len(available_actions) == 0 or prune is False:
                 # build road
                 if self.current_player.has_resources(BuildingType.ROAD.get_required_resources()):
                     # Get the valid road coords
@@ -369,9 +374,9 @@ class Catan(object):
                     for c in valid_coords:
                         available_actions.append((BuildingType.ROAD, c))
 
-            possible_trades = list(self.current_player.get_possible_trades())
-            for t in possible_trades:
-                available_actions.append((3, tuple(t.items())))
+                possible_trades = list(self.current_player.get_possible_trades())
+                for t in possible_trades:
+                    available_actions.append((3, tuple(t.items())))
 
             available_actions.append((4,))  # end turn
 
@@ -395,7 +400,7 @@ class Catan(object):
             self.game.build_road(self.current_player, coords, cost_resources=(not self.is_init_state()))
 
             if self.is_init_state():
-                self.cur_id_player = self.player_order.pop()
+                self.cur_id_player = self.next_player_turn()
                 self.current_player = self.game.players[self.cur_id_player]
 
             if self.picked_settl_coo is not None:
@@ -406,7 +411,7 @@ class Catan(object):
             is_init_state = self.is_init_state()
             if is_init_state:
                 self.picked_settl_coo = coords
-                if len(self.player_order) <= len(self.game.players)+1:
+                if self.init_state == 1:
                     self.current_player.add_resources(self.game.board.get_hex_resources_for_intersection(coords))
 
             self.game.build_settlement(self.current_player, coords, ensure_connected=(not is_init_state),
@@ -436,4 +441,19 @@ class Catan(object):
         return self.game.get_victory_points(self.current_player) >= 10
 
     def is_init_state(self):
-        return len(self.player_order) > 0 or self.picked_settl_coo is not None
+        return self.init_state != 0
+
+    def next_player_turn(self):
+        if self.init_state == 2:
+            if self.cur_id_player == self.get_players_num()-1:
+                self.init_state = 1
+                return self.cur_id_player
+            else:
+                return self.cur_id_player + 1
+        if self.init_state == 1:
+            if self.cur_id_player == 0:
+                self.init_state = 0
+                return self.cur_id_player
+            else:
+                return self.cur_id_player - 1
+        return self.init_state != 0
