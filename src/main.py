@@ -29,7 +29,7 @@ hp_model = dict(hidden_layers_num=1,
 
 hp_mcts = dict(c=1,
                d=1,
-               iterations_num=500)
+               iterations_num=70)
 
 
 def heuristic(state):
