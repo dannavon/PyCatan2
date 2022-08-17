@@ -26,8 +26,8 @@ def iteration(root, game, dnn, c, d):
     reward, action_leaf, new_state = selection(root, game, c)
     if not game.is_over():
         action_leaf = expansion(action_leaf, new_state, game)
-        # reward += d * game.heuristic(new_state)
-        # reward += dnn.forward(new_state)
+        # reward = d * game.heuristic(new_state)
+        #reward += dnn.forward(new_state)
     back_propagation(action_leaf, reward)
     game.set_state(original_state)
 

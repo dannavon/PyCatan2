@@ -98,17 +98,23 @@ def mcts_test():
 if __name__ == '__main__':
     # mlp_test()
 
-    catan_game = Catan()
-    model = create_model(catan_game.get_state_size(), catan_game.get_players_num())
-    # model = create_model(158, 4)
+    model_trained = create_model(Catan.get_state_size(), Catan.get_players_num())
+    model_untrained = create_model(Catan.get_state_size(), Catan.get_players_num())
+
     ds = Dataset(hp_training['batch_size'], hp_training['valid_ratio'], hp_training['test_ratio'])
 
     turns_num = 0
+    catan_game = Catan()
+    test_player_id = 0
 
     while True:
         turns_num += 1
-
-        best_action = mcts_get_best_action(catan_game, model, hp_mcts['c'], hp_mcts['d'], hp_mcts['iterations_num'])
+        best_action = mcts_get_best_action(catan_game, model_trained, hp_mcts['c'], hp_mcts['d'],
+                                           hp_mcts['iterations_num'])
+        #
+        # if catan_game.cur_id_player == test_player_id:
+        #     best_action = mcts_get_best_action(catan_game, model_trained, hp_mcts['c'], hp_mcts['d'], hp_mcts['iterations_num'])
+        # elif
         print("Player " + str(catan_game.get_turn()+1) + ", action:" + str(best_action))
 
         reward = catan_game.make_action(best_action)
@@ -128,4 +134,4 @@ if __name__ == '__main__':
             plot_fit(fit_res, log_loss=False, train_test_overlay=True)
             plt.show()
             print(ds)
-            sys.exit(0)
+            break;
