@@ -143,4 +143,4 @@ def train_agent(games_num, model_path):
 
 
 if __name__ == '__main__':
-    train_agent(4, 'model2')
+    train_agent(2, 'model2')

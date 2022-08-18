@@ -63,6 +63,6 @@ class Dataset:
             for X_, y_ in [(X_train, y_train), (X_valid, y_valid), (X_test, y_test)]
         ]
 
-        print(f'{len(dl_train.dataset)=}, {len(dl_valid.dataset)=}, {len(dl_test.dataset)=}')
+        print("dl_train=" + str(len(dl_train.dataset)) + "dl_valid=" + str(len(dl_valid.dataset)) + "dl_test=" + str(len(dl_test.dataset)))
 
         return dl_train, dl_valid, dl_test
