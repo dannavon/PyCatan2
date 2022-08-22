@@ -31,7 +31,7 @@ hp_model = dict(hidden_layers_num=1,
 
 hp_mcts = dict(c=1,
                d=3,
-               iterations_num=500)
+               iterations_num=250)
 
 hp_agent_training = dict(games_num=100)
 
@@ -103,6 +103,7 @@ def mcts_test():
 
 def train_agent(games_num, model_path):
     model = create_model(Catan.get_state_size(), Catan.get_players_num(), model_path)
+    models = [model, model, model, model]
 
     for i in range(1, games_num + 1):
         print(f'_________________game {i}/{games_num}________________')
@@ -116,7 +117,7 @@ def train_agent(games_num, model_path):
         while True:
             turns_num += 1
 
-            best_action = mcts_get_best_action(catan_game, model, hp_mcts['c'], hp_mcts['d'], hp_mcts['iterations_num'])
+            best_action = mcts_get_best_action(catan_game, models, hp_mcts['c'], hp_mcts['d'], hp_mcts['iterations_num'])
             print("Player " + str(catan_game.get_turn() + 1) + ", action:" + str(best_action))
 
             reward = catan_game.make_action(best_action)
@@ -142,5 +143,38 @@ def train_agent(games_num, model_path):
                 break
 
 
+def test_agent(games_num):
+    model1 = create_model(Catan.get_state_size(), Catan.get_players_num(), 'model')
+    model2 = create_model(Catan.get_state_size(), Catan.get_players_num(), 'model2')
+    models = [model2, model1, model1, model1]
+    # stats = dict(zip(range(Catan.get_players_num()), [[]]*Catan.get_players_num()))
+    stats = {k: [] for k in range(Catan.get_players_num())}
+    for i in range(1, games_num + 1):
+        print(f'_________________game {i}/{games_num}________________')
+        catan_game = Catan()
+        actions_num = 0
+        turns_num = 0
+        while True:
+            actions_num += 1
+
+            best_action = mcts_get_best_action(catan_game, models, hp_mcts['c'], hp_mcts['d'], hp_mcts['iterations_num'])
+            print("Player " + str(catan_game.get_turn() + 1) + ", action:" + str(best_action))
+
+            reward = catan_game.make_action(best_action)
+            if best_action[0] == 4:
+                turns_num += 1
+                print("Player " + str(catan_game.get_turn() + 1) + " turn!, dice: " + str(catan_game.dice))
+                # print(catan_game.game.board)
+
+            if catan_game.is_over() or actions_num > 10000:
+                stats[catan_game.cur_id_player].append([actions_num, int(turns_num/4)])
+                print("Congratulations! Player %d wins!" % (catan_game.cur_id_player + 1))
+                print("Final board:")
+                print(catan_game.game.board)
+                break
+    return stats
+
+
 if __name__ == '__main__':
-    train_agent(4, 'model2')
+    # train_agent(4, 'model2')
+    print(test_agent(2))
