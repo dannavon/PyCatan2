@@ -28,7 +28,7 @@ def iteration(root, game, agents, c, d):
         agent = agents[game.cur_id_player]
         action_leaf = expansion(action_leaf, new_state, game, agent.prune)
         reward = d * game.heuristic(new_state)
-        reward += agent.dnn.forward(new_state)
+        reward += agent.model.forward(new_state)
     back_propagation(action_leaf, reward)
     game.set_state(original_state)
 
