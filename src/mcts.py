@@ -16,7 +16,7 @@ class MCTSNode:
         self.sons = {}
 
 
-def iteration(root, game, dnn, c, d):
+def iteration(root, game, agents, c, d):
     """
     make one iteration of the MCTS
     :return: void
@@ -25,9 +25,10 @@ def iteration(root, game, dnn, c, d):
     original_state = game.get_state()
     reward, action_leaf, new_state = selection(root, game, c)
     if not game.is_over():
-        action_leaf = expansion(action_leaf, new_state, game)
+        agent = agents[game.cur_id_player]
+        action_leaf = expansion(action_leaf, new_state, game, agent.prune)
         reward = d * game.heuristic(new_state)
-        reward += dnn[game.cur_id_player].forward(new_state)
+        reward += agent.dnn.forward(new_state)
     back_propagation(action_leaf, reward)
     game.set_state(original_state)
 
@@ -69,7 +70,7 @@ def selection(root, game, c):
                 return reward, root, None
 
 
-def expansion(action_leaf, new_state, game):
+def expansion(action_leaf, new_state, game, prune=True):
     """
     :param action_leaf: a leaf of the tree
     :param new_state: the new state for insertion
@@ -79,7 +80,7 @@ def expansion(action_leaf, new_state, game):
 
     new_state_node = MCTSNode(STATE_NODE, action_leaf, game.get_turn())
     action_leaf.sons[tuple(np.array(np.array(new_state)))] = new_state_node
-    actions = game.get_actions()
+    actions = game.get_actions(prune)
     for action in actions:
         action_node = MCTSNode(ACTION_NODE, new_state_node, new_state_node.turn)
         new_state_node.sons[action] = action_node
@@ -101,7 +102,7 @@ def back_propagation(action_leaf, reward):
         node = node.parent
 
 
-def mcts_get_best_action(game, dnn, c, d, iterations_num):
+def mcts_get_best_action(game, agents, c, d, iterations_num):
     """
     :param game: the game in the current state
     :param dnn: the neural network
@@ -111,7 +112,7 @@ def mcts_get_best_action(game, dnn, c, d, iterations_num):
     """
 
     root = MCTSNode(STATE_NODE, None, game.get_turn())
-    actions = game.get_actions()
+    actions = game.get_actions(agents[game.cur_id_player].prune)
 
     if len(actions) == 1:
         return actions[0]
@@ -121,7 +122,7 @@ def mcts_get_best_action(game, dnn, c, d, iterations_num):
         root.sons[action] = son
 
     for i in range(iterations_num):
-        iteration(root, game, dnn, c, d)
+        iteration(root, game, agents, c, d)
 
     best_action = None
     biggest_w = -np.inf
