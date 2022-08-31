@@ -1,0 +1,16 @@
+name: PyCatan2
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - matplotlib
+  - jupyterlab
+  - tqdm
+  - ipywidgets
+  - pip
+  - colored
+  - pytorch
+  - pip:
+      - git+https://github.com/dannavon/PyCatan2
+
