@@ -2,7 +2,7 @@ import math
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
-from train_results import FitResult
+from src.train_results import FitResult
 
 
 def tensors_as_images(

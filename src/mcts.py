@@ -62,7 +62,8 @@ def selection(root, game, c):
             if not game.is_over():
                 state = game.get_state()
                 if tuple(np.array(state)) in root.sons:
-                    root = root.sons[tuple(np.array(state))]
+                    s1 = root.sons[tuple(np.array(state))]
+                    root = s1
                 else:
                     return reward, root, state
             else:

@@ -144,11 +144,11 @@ def train_agent(games_num, model_path):
 
 
 def test_agent(games_num):
-    model1 = create_model(Catan.get_state_size(), Catan.get_players_num(), 'model')
-    model2 = create_model(Catan.get_state_size(), Catan.get_players_num(), 'model2')
+    model1 = create_model(Catan.get_state_size(), 4, 'model')
+    model2 = create_model(Catan.get_state_size(), 4, 'model2')
     models = [model2, model1, model1, model1]
     # stats = dict(zip(range(Catan.get_players_num()), [[]]*Catan.get_players_num()))
-    stats = {k: [] for k in range(Catan.get_players_num())}
+    stats = {k: [] for k in range(4)}
     for i in range(1, games_num + 1):
         print(f'_________________game {i}/{games_num}________________')
         catan_game = Catan()

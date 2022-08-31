@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 
-from pycatan import Game, DevelopmentCard, Resource
-from pycatan.board import BeginnerBoard, BoardRenderer, BuildingType, Coords, IntersectionBuilding, PathBuilding
+from src.pycatan import Game, DevelopmentCard, Resource
+from src.pycatan.board import BeginnerBoard, BoardRenderer, BuildingType, Coords, IntersectionBuilding, PathBuilding
 import string
 import random
 from torch import Tensor
@@ -15,6 +15,7 @@ class Catan(object):
 
         self.picked_settl_coo = None
         self.init_state = 2
+        # self.num_players = num_players
         self.game = Game(BeginnerBoard())
         self.renderer = BoardRenderer(self.game.board)
         self.label_letters = string.ascii_lowercase + string.ascii_uppercase + "123456789"

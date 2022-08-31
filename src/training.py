@@ -8,9 +8,9 @@ from typing import Any, Callable, Optional
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 
-from train_results import FitResult, BatchResult, EpochResult
+from src.train_results import FitResult, BatchResult, EpochResult
 
-from mlp import MLP
+from src.mlp import MLP
 
 
 class Trainer(abc.ABC):
