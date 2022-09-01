@@ -19,16 +19,27 @@ class MCTSNode:
 def iteration(root, game, agent, c, d):
     """
     make one iteration of the MCTS
+    :param game: the current game
+    :param agent: the agent who activates the method
+    :c the weight of the exploration part in the UCT
+    :d the weight of the heuristic
     :return: void
     """
 
     original_state = game.get_state()
+
+    # returns the reward if it's the end of the game, the selected action, and the given state after playing this action
     reward, action_leaf, new_state = selection(root, game, c)
+
     if not game.is_over():
         action_leaf = expansion(action_leaf, new_state, game, agent.prune)
-        reward = d * game.heuristic(new_state)
-        reward += agent.model.forward(new_state)
+
+        # adding the weighted heuristic value to the predicted reward from the DNN
+        reward = d * game.heuristic(new_state) + agent.model.forward(new_state)
+
     back_propagation(action_leaf, reward)
+
+    # back to the original state of the game
     game.set_state(original_state)
 
 
@@ -106,7 +117,7 @@ def back_propagation(action_leaf, reward):
 def mcts_get_best_action(game, agents, c, d, iterations_num):
     """
     :param game: the game in the current state
-    :param dnn: the neural network
+    :param agents: the agent that use this method
     :param c: the exploration/exploitation factor
     :param iterations_num: the number of MCTS iterations
     :return: the most visited action after iteration_num iterations
