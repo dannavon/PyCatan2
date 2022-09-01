@@ -1,3 +1,28 @@
+# Installation
+Our implementation is based pycatan library described below.
+In order to install our project - 
+```
+git clone https://github.com/dannavon/PyCatan2.git
+conda env update -f environment.yml
+conda activate PyCatan2
+```
+Then you can run 
+``` CatanNB.ipynb```
+One can comment the <code>train_agent()</code> function.
+
+We trained our model using Google colab using [this guide](https://medium.com/analytics-vidhya/how-to-use-google-colab-with-github-via-google-drive-68efb23a42d) 
+In case training over colab is necessary paste at the beginning:
+```
+# %cd /content/drive/MyDrive/Git
+# !git clone https://github.com/dannavon/PyCatan2.git
+# %cd /content/drive/MyDrive/Git/PyCatan2
+# !git pull
+# !pip install colored
+```
+
+This code may run on any Windows/Linux machine with Anaconda.
+
+
 # pycatan
 
 [![PyPi](https://img.shields.io/pypi/v/pycatan.svg)](https://pypi.org/project/pycatan/#description)
