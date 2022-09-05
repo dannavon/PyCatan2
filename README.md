@@ -1,6 +1,6 @@
 # Installation
 Our implementation is based pycatan library described below.
-In order to install our project - 
+In order to install and run our project - 
 ```
 git clone https://github.com/dannavon/PyCatan2.git
 conda env update -f environment.yml
@@ -20,7 +20,7 @@ In case training over colab is necessary paste at the beginning:
 # !pip install colored
 ```
 
-Directory structure:
+# Directory structure:
 * CatanNB.ipynb - main notebook that simulates the game, train and test agents.
 * src:
   * catan_wrp.py - PyCatan2 wrapper, interact with the main game engine, implementing our own chosen rules
@@ -28,12 +28,14 @@ Directory structure:
   * main.py - a test environment for bot agents and wrapper.
   * mcts.py - Monte Carlo Tree Search implementation for multiple agents using model to predict value instead of rollouts
   * mlp.py/optimizers.py/plot.py/training.py - python files for build, train and plot the model.
+  * model2 - our trained model, can be kept training
 * docs - explanation of the PyCatan2 library usage with examples.
 
-rest of the files are part of the PyCatan2 library.
+The rest of the files are part of the PyCatan2 library.
 The reason we forked for PyCatan2 is the need of change parts of the data structure to be compatible with our needs.
 
 This code may run on any Windows/Linux machine with Anaconda.
+Has been tested on Windows and Google Colab (Linux).
 
 
 # pycatan
