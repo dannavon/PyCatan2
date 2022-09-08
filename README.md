@@ -3,6 +3,7 @@ Our implementation is based pycatan library described below.
 In order to install and run our project - 
 ```
 git clone https://github.com/dannavon/PyCatan2.git
+cd PyCatan2
 conda env update -f environment.yml
 conda activate PyCatan2
 ```
