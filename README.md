@@ -6,6 +6,7 @@ git clone https://github.com/dannavon/PyCatan2.git
 cd PyCatan2
 conda env update -f environment.yml
 conda activate PyCatan2
+jupyter lab
 ```
 Then you can run 
 ``` CatanNB.ipynb```
